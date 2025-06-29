@@ -10,14 +10,14 @@
   
   html {
     @apply dark;
-  }
+}
 }
 
 @layer components {
   .crypto-card {
     @apply bg-card-dark border border-dark-border rounded-lg p-4 hover:border-crypto-blue/50 transition-all duration-300;
-  }
-  
+}
+
   .crypto-button {
     @apply bg-crypto-blue hover:bg-crypto-blue/80 text-white px-4 py-2 rounded-lg transition-colors duration-200;
   }
@@ -25,7 +25,7 @@
   .crypto-input {
     @apply bg-card-dark border border-dark-border text-dark placeholder-dark-secondary rounded-lg px-3 py-2 focus:border-crypto-blue focus:ring-1 focus:ring-crypto-blue transition-colors;
   }
-  
+
   .progress-bar {
     @apply bg-dark-border rounded-full overflow-hidden;
   }

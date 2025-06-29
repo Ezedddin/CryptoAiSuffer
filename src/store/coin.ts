@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import ApiService, { type CombinedToken, type PumpFunToken } from '../services/api'
 
 export interface Coin {
     id: string
@@ -40,7 +41,13 @@ export interface CoinDetail extends Coin {
 }
 
 export const useCoinStore = defineStore('coin', () => {
-    const coins = ref<Coin[]>([
+    const coins = ref<Coin[]>([])
+    const isLoading = ref(false)
+    const error = ref<string | null>(null)
+    const isRealTimeConnected = ref(false)
+
+    // Fallback mock data
+    const mockCoins: Coin[] = [
         {
             id: '1',
             name: 'SafeMoon Pro',
@@ -92,12 +99,139 @@ export const useCoinStore = defineStore('coin', () => {
             holders: 890,
             isNewLaunch: true
         }
-    ])
+    ]
+
+    // Initialize with mock data
+    coins.value = mockCoins
 
     const selectedCoin = ref<CoinDetail | null>(null)
     const searchQuery = ref('')
     const selectedBlockchain = ref<string>('all')
     const minAiScore = ref(0)
+
+    // Helper functions for data transformation
+    const shortenAddress = (address: string): string => {
+        if (!address) return ''
+        if (address.length <= 10) return address
+        return `${address.slice(0, 6)}...${address.slice(-4)}`
+    }
+
+    const getCleanCoinName = (token: CombinedToken | PumpFunToken, index: number): string => {
+        // Voor Pump.fun tokens
+        if (token.source === 'pump.fun') {
+            if (token.name && token.name.length < 50 && !token.name.startsWith('0x')) {
+                return token.name
+            }
+            if (token.symbol && token.symbol.length < 20) {
+                return token.symbol
+            }
+            if (token.description && token.description.length < 50 && !token.description.startsWith('0x')) {
+                return token.description
+            }
+            return `Pump Token ${index + 1}`
+        }
+
+        // Voor DexScreener tokens
+        if ('name' in token && token.name && token.name.length < 50 && !token.name.startsWith('0x')) {
+            return token.name
+        }
+        if (token.symbol && token.symbol.length < 20) {
+            return token.symbol
+        }
+        if (token.description && token.description.length < 50 && !token.description.startsWith('0x')) {
+            return token.description
+        }
+        // If description is too long or looks like an address, use shortened version or fallback
+        if (token.description && token.description.startsWith('0x')) {
+            return `Token ${shortenAddress(token.description)}`
+        }
+        return `Token ${index + 1}`
+    }
+
+    const transformTokenToCoin = (token: CombinedToken | PumpFunToken, index: number): Coin => ({
+        id: ('id' in token ? token.id : '') || ('mint' in token ? token.mint : '') || index.toString(),
+        name: getCleanCoinName(token, index),
+        symbol: token.symbol || 'UNK',
+        logo: ('imageUrl' in token ? token.imageUrl : '') || ('image' in token ? token.image : '') || (token.source === 'pump.fun' ? '🚀' : '🪙'),
+        launchDate: token.receivedAt ? token.receivedAt.split('T')[0] : new Date().toISOString().split('T')[0],
+        currentPrice: token.source === 'pump.fun' && 'usd_market_cap' in token && token.usd_market_cap
+            ? token.usd_market_cap / 1000000 // Rough price estimation
+            : Math.random() * 0.01,
+        priceChange24h: (Math.random() - 0.5) * 200, // Mock change
+        aiScore: Math.floor(Math.random() * 100), // Mock AI score
+        blockchain: token.blockchain === 'Multi'
+            ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')
+            : (token.blockchain as 'BTC' | 'Solana' | 'Ethereum') || 'Solana',
+        description: token.description || `New ${token.source === 'pump.fun' ? 'Pump.fun' : 'DexScreener'} token`,
+        totalSupply: Math.floor(Math.random() * 1000000000),
+        marketCap: ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
+        volume24h: Math.floor(Math.random() * 1000000),
+        holders: Math.floor(Math.random() * 10000),
+        isNewLaunch: true
+    })
+
+    // Real-time token handler
+    const handleNewToken = (token: PumpFunToken) => {
+        console.log('🔥 Adding new real-time token to store:', token.name || token.symbol)
+
+        // Transform to Coin interface
+        const newCoin = transformTokenToCoin(token, coins.value.length)
+
+        // Add to beginning of array (newest first)
+        coins.value.unshift(newCoin)
+
+        // Keep only last 200 coins to prevent memory issues
+        if (coins.value.length > 200) {
+            coins.value = coins.value.slice(0, 200)
+        }
+
+        console.log(`💎 Total coins in store: ${coins.value.length}`)
+    }
+
+    // Setup real-time connection
+    const setupRealTime = () => {
+        console.log('🔗 Setting up real-time connection...')
+
+        // Connect to SSE stream
+        ApiService.connectRealTime()
+
+        // Listen for new tokens
+        const unsubscribe = ApiService.onNewToken(handleNewToken)
+
+        // Update connection status
+        isRealTimeConnected.value = ApiService.isRealTimeConnected()
+
+        // Cleanup function
+        return unsubscribe
+    }
+
+    // API function to fetch latest coins
+    async function fetchLatestCoins() {
+        isLoading.value = true
+        error.value = null
+
+        try {
+            const allTokens = await ApiService.getAllTokens()
+
+            // Debug: log de eerste token om de structuur te zien
+            if (allTokens && allTokens.length > 0) {
+                console.log("Frontend: Sample token data:", allTokens[0])
+                console.log("Frontend: Token sources:", allTokens.map(t => t.source).slice(0, 5))
+            }
+
+            // Transform token data to our Coin interface
+            coins.value = allTokens.map((token: CombinedToken, index: number) => transformTokenToCoin(token, index))
+
+            console.log(`✅ Loaded ${coins.value.length} tokens (${allTokens.filter(t => t.source === 'pump.fun').length} Pump.fun + ${allTokens.filter(t => t.source === 'dexscreener').length} DexScreener)`)
+        } catch (err) {
+            error.value = 'Failed to fetch tokens. Using mock data instead.'
+            console.error('Error fetching tokens:', err)
+            // Keep mock data on error
+            coins.value = mockCoins
+        } finally {
+            isLoading.value = false
+        }
+    }
 
     const filteredCoins = computed(() => {
         return coins.value.filter(coin => {
@@ -160,12 +294,21 @@ export const useCoinStore = defineStore('coin', () => {
         minAiScore.value = score
     }
 
+    // Cleanup function
+    const cleanup = () => {
+        ApiService.disconnectRealTime()
+        isRealTimeConnected.value = false
+    }
+
     return {
         coins,
         selectedCoin,
         searchQuery,
         selectedBlockchain,
         minAiScore,
+        isLoading,
+        error,
+        isRealTimeConnected,
         filteredCoins,
         newLaunches,
         topPerformers,
@@ -173,7 +316,10 @@ export const useCoinStore = defineStore('coin', () => {
         setSelectedCoin,
         updateSearchQuery,
         updateBlockchainFilter,
-        updateAiScoreFilter
+        updateAiScoreFilter,
+        fetchLatestCoins,
+        setupRealTime,
+        cleanup
     }
 })
 
