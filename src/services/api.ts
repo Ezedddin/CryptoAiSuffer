@@ -14,6 +14,9 @@ interface DexScreenerCoin {
     symbol?: string
     description?: string
     imageUrl?: string
+    url?: string // DexScreener URL naar de coin pagina
+    chainId?: string
+    tokenAddress?: string
     [key: string]: any
 }
 

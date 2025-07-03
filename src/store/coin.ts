@@ -18,6 +18,7 @@ export interface Coin {
     volume24h: number
     holders: number
     isNewLaunch: boolean
+    externalUrl?: string // Echte URL naar DexScreener of Pump.fun
 }
 
 export interface WalletAnalysis {
@@ -63,7 +64,8 @@ export const useCoinStore = defineStore('coin', () => {
             marketCap: 450000,
             volume24h: 85000,
             holders: 1250,
-            isNewLaunch: true
+            isNewLaunch: true,
+            externalUrl: 'https://dexscreener.com/ethereum/safemoonpro'
         },
         {
             id: '2',
@@ -80,7 +82,8 @@ export const useCoinStore = defineStore('coin', () => {
             marketCap: 3900000,
             volume24h: 267000,
             holders: 3450,
-            isNewLaunch: true
+            isNewLaunch: true,
+            externalUrl: 'https://pump.fun/coin/cgem'
         },
         {
             id: '3',
@@ -97,7 +100,8 @@ export const useCoinStore = defineStore('coin', () => {
             marketCap: 49140,
             volume24h: 12000,
             holders: 890,
-            isNewLaunch: true
+            isNewLaunch: true,
+            externalUrl: 'https://dexscreener.com/bitcoin/moonshot'
         }
     ]
 
@@ -148,27 +152,41 @@ export const useCoinStore = defineStore('coin', () => {
         return `Token ${index + 1}`
     }
 
-    const transformTokenToCoin = (token: CombinedToken | PumpFunToken, index: number): Coin => ({
-        id: ('id' in token ? token.id : '') || ('mint' in token ? token.mint : '') || index.toString(),
-        name: getCleanCoinName(token, index),
-        symbol: token.symbol || 'UNK',
-        logo: ('imageUrl' in token ? token.imageUrl : '') || ('image' in token ? token.image : '') || (token.source === 'pump.fun' ? '🚀' : '🪙'),
-        launchDate: token.receivedAt ? token.receivedAt.split('T')[0] : new Date().toISOString().split('T')[0],
-        currentPrice: token.source === 'pump.fun' && 'usd_market_cap' in token && token.usd_market_cap
-            ? token.usd_market_cap / 1000000 // Rough price estimation
-            : Math.random() * 0.01,
-        priceChange24h: (Math.random() - 0.5) * 200, // Mock change
-        aiScore: Math.floor(Math.random() * 100), // Mock AI score
-        blockchain: token.blockchain === 'Multi'
-            ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')
-            : (token.blockchain as 'BTC' | 'Solana' | 'Ethereum') || 'Solana',
-        description: token.description || `New ${token.source === 'pump.fun' ? 'Pump.fun' : 'DexScreener'} token`,
-        totalSupply: Math.floor(Math.random() * 1000000000),
-        marketCap: ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
-        volume24h: Math.floor(Math.random() * 1000000),
-        holders: Math.floor(Math.random() * 10000),
-        isNewLaunch: true
-    })
+    const transformTokenToCoin = (token: CombinedToken | PumpFunToken, index: number): Coin => {
+        // Genereer echte externe URL
+        let externalUrl = ''
+        if (token.source === 'pump.fun') {
+            // Voor Pump.fun tokens, gebruik symbol voor URL
+            const symbol = token.symbol?.toLowerCase() || 'unknown'
+            externalUrl = `https://pump.fun/coin/${symbol}`
+        } else if (token.source === 'dexscreener' && 'url' in token && token.url) {
+            // Voor DexScreener tokens, gebruik de echte URL uit de API
+            externalUrl = token.url
+        }
+
+        return {
+            id: ('id' in token ? token.id : '') || ('mint' in token ? token.mint : '') || index.toString(),
+            name: getCleanCoinName(token, index),
+            symbol: token.symbol || 'UNK',
+            logo: ('imageUrl' in token ? token.imageUrl : '') || ('image' in token ? token.image : '') || (token.source === 'pump.fun' ? '🚀' : '🪙'),
+            launchDate: token.receivedAt ? token.receivedAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            currentPrice: token.source === 'pump.fun' && 'usd_market_cap' in token && token.usd_market_cap
+                ? token.usd_market_cap / 1000000 // Rough price estimation
+                : Math.random() * 0.01,
+            priceChange24h: (Math.random() - 0.5) * 200, // Mock change
+            aiScore: Math.floor(Math.random() * 100), // Mock AI score
+            blockchain: token.blockchain === 'Multi'
+                ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')
+                : (token.blockchain as 'BTC' | 'Solana' | 'Ethereum') || 'Solana',
+            description: token.description || `New ${token.source === 'pump.fun' ? 'Pump.fun' : 'DexScreener'} token`,
+            totalSupply: Math.floor(Math.random() * 1000000000),
+            marketCap: ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
+            volume24h: Math.floor(Math.random() * 1000000),
+            holders: Math.floor(Math.random() * 10000),
+            isNewLaunch: true,
+            externalUrl: externalUrl
+        }
+    }
 
     // Real-time token handler
     const handleNewToken = (token: PumpFunToken) => {

@@ -33,6 +33,20 @@
               {{ coin.aiScore }}/100
             </span>
           </div>
+          
+          <!-- External Link Button -->
+          <div class="external-link-section" v-if="coin.externalUrl">
+            <a 
+              :href="coin.externalUrl" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="external-link-btn"
+            >
+              <span class="link-icon">{{ getExternalIcon(coin) }}</span>
+              <span class="link-text">Bekijk op {{ getExternalPlatform(coin) }}</span>
+              <span class="external-arrow">↗️</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -73,18 +87,22 @@
     <div class="main-content-grid">
       <!-- Price Chart -->
       <div class="chart-section card">
-        <h3 class="section-title">📈 Prijsgeschiedenis</h3>
-        <div class="chart-container">
-          <div class="chart-placeholder">
-            <div class="chart-mock">
-              <div v-for="(point, index) in coin.priceHistory" :key="index" 
-                   class="chart-bar" 
-                   :style="{ height: `${(point.price / coin.currentPrice) * 60}px` }">
-              </div>
-            </div>
-            <p class="chart-note">📊 Grafiek van de laatste 24 uur</p>
-          </div>
-        </div>
+        <CryptoChart 
+          v-if="coin"
+          :coin-data="{
+            name: coin.name,
+            symbol: coin.symbol,
+            currentPrice: coin.currentPrice,
+            priceChange24h: coin.priceChange24h,
+            marketCap: coin.marketCap,
+            volume24h: coin.volume24h,
+            priceHistory: coin.priceHistory?.map(p => ({
+              timestamp: new Date(p.timestamp).getTime(),
+              price: p.price,
+              volume: Math.random() * (coin?.volume24h || 1000000)
+            }))
+          }"
+        />
       </div>
 
       <!-- AI Analysis -->
@@ -199,6 +217,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoinStore } from '../store/coin'
 import type { CoinDetail } from '../store/coin'
+import CryptoChart from '../components/CryptoChart.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -239,14 +258,7 @@ const getPriceChangeClass = (change: number): string => {
   return change >= 0 ? 'text-success' : 'text-danger'
 }
 
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('nl-NL', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
+
 
 const shortenAddress = (address: string): string => {
   if (!address) return ''
@@ -260,6 +272,23 @@ const goBack = () => {
 
 const navigateToWallet = (address: string) => {
   router.push(`/wallet/${address}`)
+}
+
+// External link functions
+const getExternalIcon = (coinData: CoinDetail): string => {
+  // Check of de URL pump.fun bevat
+  if (coinData.externalUrl?.includes('pump.fun')) {
+    return '🚀' // Pump.fun icon
+  }
+  return '🔍' // DexScreener icon
+}
+
+const getExternalPlatform = (coinData: CoinDetail): string => {
+  // Check of de URL pump.fun bevat
+  if (coinData.externalUrl?.includes('pump.fun')) {
+    return 'Pump.fun'
+  }
+  return 'DexScreener'
 }
 
 onMounted(() => {
@@ -388,6 +417,48 @@ onMounted(() => {
   font-weight: 700;
   padding: 8px 16px;
   border-radius: 8px;
+}
+
+.external-link-section {
+  margin-top: 15px;
+}
+
+.external-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  color: #000;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+}
+
+.external-link-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+  background: linear-gradient(135deg, #00cc6a, #00aa55);
+}
+
+.external-link-btn:active {
+  transform: translateY(0);
+}
+
+.link-icon {
+  font-size: 1.1rem;
+}
+
+.link-text {
+  white-space: nowrap;
+}
+
+.external-arrow {
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .stats-overview {
@@ -710,6 +781,13 @@ onMounted(() => {
   
   .coin-price-section {
     text-align: left;
+  }
+  
+  .external-link-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 1rem;
   }
   
   .main-content-grid {
