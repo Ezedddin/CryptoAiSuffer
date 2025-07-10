@@ -4,6 +4,8 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { webcrypto } from 'crypto'
+if (!globalThis.crypto) globalThis.crypto = webcrypto as any
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [

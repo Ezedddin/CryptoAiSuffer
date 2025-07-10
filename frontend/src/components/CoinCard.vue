@@ -100,8 +100,21 @@ const getPriceChangeClass = (change: number): string => {
       <div class="holders-count">
         👥 {{ formatNumber(coin.holders) }} holders
       </div>
-      <div class="new-launch-badge" v-if="coin.isNewLaunch">
-        ✨ NIEUW
+      <div class="footer-actions">
+        <div class="new-launch-badge" v-if="coin.isNewLaunch">
+          ✨ NIEUW
+        </div>
+        <!-- Pump.fun button - alleen tonen als het een Pump.fun token is -->
+        <a 
+          v-if="coin.externalUrl && coin.externalUrl.includes('pump.fun')" 
+          :href="coin.externalUrl" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="pump-fun-button"
+          @click.stop
+        >
+          🚀 Pump.fun
+        </a>
       </div>
     </div>
   </div>
@@ -277,6 +290,12 @@ const getPriceChangeClass = (change: number): string => {
   color: #666;
 }
 
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .new-launch-badge {
   background: linear-gradient(45deg, #00ff88, #00cc6a);
   color: #000;
@@ -285,5 +304,26 @@ const getPriceChangeClass = (change: number): string => {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.pump-fun-button {
+  background: linear-gradient(45deg, #dc1fff, #a855f7);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pump-fun-button:hover {
+  background: linear-gradient(45deg, #a855f7, #dc1fff);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 31, 255, 0.3);
 }
 </style>

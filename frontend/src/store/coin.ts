@@ -153,15 +153,14 @@ export const useCoinStore = defineStore('coin', () => {
     }
 
     const transformTokenToCoin = (token: CombinedToken | PumpFunToken, index: number): Coin => {
-        // Genereer echte externe URL
+        // Gebruik de URL uit de API response
         let externalUrl = ''
         if (token.source === 'pump.fun') {
-            // Voor Pump.fun tokens, gebruik symbol voor URL
-            const symbol = token.symbol?.toLowerCase() || 'unknown'
-            externalUrl = `https://pump.fun/coin/${symbol}`
-        } else if (token.source === 'dexscreener' && 'url' in token && token.url) {
+            // Voor Pump.fun tokens, gebruik de url uit de API response
+            externalUrl = ('url' in token && token.url) ? token.url : ''
+        } else if (token.source === 'dexscreener') {
             // Voor DexScreener tokens, gebruik de echte URL uit de API
-            externalUrl = token.url
+            externalUrl = ('url' in token && token.url) ? token.url : ''
         }
 
         return {
@@ -170,10 +169,10 @@ export const useCoinStore = defineStore('coin', () => {
             symbol: token.symbol || 'UNK',
             logo: ('imageUrl' in token ? token.imageUrl : '') || ('image' in token ? token.image : '') || (token.source === 'pump.fun' ? '🚀' : '🪙'),
             launchDate: token.receivedAt ? token.receivedAt.split('T')[0] : new Date().toISOString().split('T')[0],
-            currentPrice: token.source === 'pump.fun' && 'usd_market_cap' in token && token.usd_market_cap
+            currentPrice: token.price || (token.source === 'pump.fun' && 'usd_market_cap' in token && token.usd_market_cap
                 ? token.usd_market_cap / 1000000 // Rough price estimation
-                : Math.random() * 0.01,
-            priceChange24h: (Math.random() - 0.5) * 200, // Mock change
+                : Math.random() * 0.01),
+            priceChange24h: token.priceChange24h || (Math.random() - 0.5) * 200, // Echte prijs verandering of mock
             aiScore: Math.floor(Math.random() * 100), // Mock AI score
             blockchain: token.blockchain === 'Multi'
                 ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')

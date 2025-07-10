@@ -16,8 +16,8 @@ module.exports = {
         'crypto-purple': '#8b5cf6',
       },
       backgroundColor: {
-        'dark': '#121212',
-        'card-dark': '#1e1e1e',
+        'dark-bg': '#121212',
+        'dark-card': '#1e1e1e',
       },
       textColor: {
         'dark': '#ffffff',

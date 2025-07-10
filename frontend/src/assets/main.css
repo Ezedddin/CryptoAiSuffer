@@ -5,25 +5,25 @@
 /* Custom crypto dashboard styles */
 @layer base {
   body {
-    @apply bg-dark text-dark font-sans antialiased;
+    @apply bg-dark-bg text-white font-sans antialiased;
   }
   
   html {
     @apply dark;
-}
+  }
 }
 
 @layer components {
   .crypto-card {
-    @apply bg-card-dark border border-dark-border rounded-lg p-4 hover:border-crypto-blue/50 transition-all duration-300;
-}
+    @apply bg-dark-card border border-dark-border rounded-lg p-4 hover:border-crypto-blue/50 transition-all duration-300;
+  }
 
   .crypto-button {
     @apply bg-crypto-blue hover:bg-crypto-blue/80 text-white px-4 py-2 rounded-lg transition-colors duration-200;
   }
   
   .crypto-input {
-    @apply bg-card-dark border border-dark-border text-dark placeholder-dark-secondary rounded-lg px-3 py-2 focus:border-crypto-blue focus:ring-1 focus:ring-crypto-blue transition-colors;
+    @apply bg-dark-card border border-dark-border text-white placeholder-gray-400 rounded-lg px-3 py-2 focus:border-crypto-blue focus:ring-1 focus:ring-crypto-blue transition-colors;
   }
 
   .progress-bar {
@@ -35,7 +35,7 @@
   }
   
   .sidebar-nav {
-    @apply text-dark-secondary hover:text-crypto-blue hover:bg-crypto-blue/10 px-3 py-2 rounded-lg transition-all duration-200;
+    @apply text-gray-400 hover:text-crypto-blue hover:bg-crypto-blue/10 px-3 py-2 rounded-lg transition-all duration-200;
   }
   
   .sidebar-nav.active {
