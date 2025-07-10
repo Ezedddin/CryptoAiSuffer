@@ -14,7 +14,6 @@ export interface Coin {
     aiScore: number
     blockchain: 'BTC' | 'Solana' | 'Ethereum'
     description: string
-    totalSupply: number
     marketCap: number
     volume24h: number
     isNewLaunch: boolean
@@ -62,7 +61,7 @@ export const useCoinStore = defineStore('coin', () => {
             aiScore: 85,
             blockchain: 'Ethereum',
             description: 'Next generation DeFi token with advanced tokenomics',
-            totalSupply: 1000000000,
+    
             marketCap: 450000,
             volume24h: 85000,
 
@@ -81,7 +80,7 @@ export const useCoinStore = defineStore('coin', () => {
             aiScore: 72,
             blockchain: 'Solana',
             description: 'Community-driven meme coin with utility features',
-            totalSupply: 500000000,
+    
             marketCap: 3900000,
             volume24h: 267000,
 
@@ -99,7 +98,7 @@ export const useCoinStore = defineStore('coin', () => {
             aiScore: 58,
             blockchain: 'BTC',
             description: 'Bitcoin-based experimental token',
-            totalSupply: 21000000,
+    
             marketCap: 49140,
             volume24h: 12000,
 
@@ -209,7 +208,6 @@ export const useCoinStore = defineStore('coin', () => {
                 ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')
                 : (token.blockchain as 'BTC' | 'Solana' | 'Ethereum') || 'Solana',
             description: token.description || `New ${token.source === 'pump.fun' ? 'Pump.fun' : 'DexScreener'} token`,
-            totalSupply: Math.floor(Math.random() * 1000000000),
             source: token.source,
             url: ('url' in token ? token.url : '') || externalUrl,
             marketCap: ('marketCap' in token ? token.marketCap : 0) || ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),

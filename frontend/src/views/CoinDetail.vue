@@ -78,13 +78,7 @@
         </div>
       </div>
 
-      <div class="stat-item card">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-content">
-          <span class="stat-label">Total Supply</span>
-          <span class="stat-value">{{ formatNumber(coin.totalSupply) }}</span>
-        </div>
-      </div>
+
     </div>
 
     <!-- Main Content Grid -->
