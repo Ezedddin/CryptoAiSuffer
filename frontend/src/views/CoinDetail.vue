@@ -23,7 +23,12 @@
             <span class="price-label">Huidige Prijs</span>
             <span class="price-value">${{ formatPrice(coin.currentPrice) }}</span>
             <span class="price-change" :class="getPriceChangeClass(coin.priceChange24h)">
-              {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}%
+              <!-- Toon 24h change alleen voor DexScreener tokens (Pump.fun heeft geen 24h data) -->
+              <span v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
+                {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}%
+              </span>
+              <!-- Voor Pump.fun tokens, toon N/A -->
+              <span v-else class="na-value">N/A</span>
             </span>
           </div>
           
@@ -64,14 +69,28 @@
         <div class="stat-icon">📊</div>
         <div class="stat-content">
           <span class="stat-label">Volume 24h</span>
-          <span class="stat-value">${{ formatNumber(coin.volume24h) }}</span>
+          <span class="stat-value">
+            <!-- Toon volume alleen voor DexScreener tokens (Pump.fun heeft geen volume data) -->
+            <span v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
+              ${{ formatNumber(coin.volume24h) }}
+            </span>
+            <!-- Voor Pump.fun tokens, toon N/A -->
+            <span v-else class="na-value">N/A</span>
+          </span>
         </div>
       </div>
       <div class="stat-item card">
         <div class="stat-icon">👥</div>
         <div class="stat-content">
           <span class="stat-label">Holders</span>
-          <span class="stat-value">{{ formatNumber(coin.holders) }}</span>
+          <span class="stat-value">
+            <!-- Toon holders alleen voor DexScreener tokens (Pump.fun heeft geen holder data) -->
+            <span v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
+              {{ formatNumber(coin.holders) }}
+            </span>
+            <!-- Voor Pump.fun tokens, toon N/A -->
+            <span v-else class="na-value">N/A</span>
+          </span>
         </div>
       </div>
       <div class="stat-item card">
@@ -724,6 +743,12 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
+}
+
+.na-value {
+  color: #888;
+  font-style: italic;
+  opacity: 0.7;
 }
 
 .view-wallet-btn {

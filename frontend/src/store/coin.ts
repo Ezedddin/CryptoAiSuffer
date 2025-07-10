@@ -156,8 +156,8 @@ export const useCoinStore = defineStore('coin', () => {
         // Gebruik de URL uit de API response
         let externalUrl = ''
         if (token.source === 'pump.fun') {
-            // Voor Pump.fun tokens, gebruik de url uit de API response
-            externalUrl = ('url' in token && token.url) ? token.url : ''
+            // Voor Pump.fun tokens, gebruik de externalUrl uit de API response
+            externalUrl = ('externalUrl' in token && token.externalUrl) ? token.externalUrl : ''
         } else if (token.source === 'dexscreener') {
             // Voor DexScreener tokens, gebruik de echte URL uit de API
             externalUrl = ('url' in token && token.url) ? token.url : ''

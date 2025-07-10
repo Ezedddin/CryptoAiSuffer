@@ -33,6 +33,7 @@ interface PumpFunToken {
     source: string
     receivedAt: string
     blockchain: string
+    externalUrl?: string // URL naar Pump.fun coin pagina
     [key: string]: any
 }
 
@@ -40,6 +41,7 @@ interface PumpFunToken {
 interface CombinedToken extends Partial<DexScreenerCoin>, Partial<PumpFunToken> {
     source: 'dexscreener' | 'pump.fun'
     blockchain: string
+    externalUrl?: string // URL naar coin pagina (Pump.fun of DexScreener)
 }
 
 // Interface voor SSE berichten
