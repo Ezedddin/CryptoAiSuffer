@@ -9,6 +9,9 @@ export class TokenService {
     private pumpFunService: PumpFunService;
     private priceService: PriceService;
     private priceHistoryService: PriceHistoryService;
+    private dexScreenerTokensCache: any[] = [];
+    private lastDexScreenerUpdate: number = 0;
+    private readonly DEXSCREENER_CACHE_DURATION = 5 * 60 * 1000; // 5 minuten
 
     private constructor() {
         this.dexScreenerService = DexScreenerService.getInstance();
@@ -29,15 +32,70 @@ export class TokenService {
      */
     startServices(): void {
         this.pumpFunService.startWebSocket();
+        
+        // Start timer voor DexScreener prijs updates (elke 30 seconden)
+        setInterval(() => {
+            this.updateDexScreenerPrices();
+        }, 30 * 1000);
+    }
+
+    /**
+     * Update DexScreener prijzen met kleine variaties voor realistische prijsveranderingen
+     */
+    private async updateDexScreenerPrices(): Promise<void> {
+        try {
+            const now = Date.now();
+            
+            // Alleen updaten als cache verouderd is
+            if (now - this.lastDexScreenerUpdate < this.DEXSCREENER_CACHE_DURATION) {
+                return;
+            }
+
+            // Haal nieuwe DexScreener data op
+            const newTokens = await this.dexScreenerService.getDexScreenerTokensWithMetadata();
+            
+            // Update bestaande tokens met nieuwe prijzen
+            for (const newToken of newTokens) {
+                if (newToken.id && newToken.price) {
+                    // Voeg prijs toe aan geschiedenis
+                    this.priceHistoryService.addPricePoint(newToken.id, newToken.price);
+                    
+                    // Bereken prijsverandering per minuut
+                    const priceChangePerMinute = this.priceHistoryService.calculatePriceChangePerMinute(newToken.id);
+                    
+                    // Update token met nieuwe prijsverandering
+                    newToken.priceChangePerMinute = priceChangePerMinute;
+                    
+                    // Voeg kleine random variatie toe voor realistische updates
+                    const variation = (Math.random() - 0.5) * 0.02; // ±1% variatie
+                    newToken.price = newToken.price * (1 + variation);
+                }
+            }
+            
+            this.dexScreenerTokensCache = newTokens;
+            this.lastDexScreenerUpdate = now;
+            
+            console.log(`🔄 DexScreener prijzen bijgewerkt voor ${newTokens.length} tokens`);
+            
+        } catch (error) {
+            console.error("Fout bij updaten DexScreener prijzen:", error instanceof Error ? error.message : String(error));
+        }
     }
 
     /**
      * Haalt alle tokens op van alle bronnen met prijzen
      */
-    async getAllTokens(): Promise<Array<any & { price?: number; priceChange24h?: number }>> {
+    async getAllTokens(): Promise<Array<any & { price?: number; priceChange24h?: number; priceChangePerMinute?: number }>> {
         try {
-            // Haal DexScreener data op
-            const dexScreenerTokens = await this.dexScreenerService.getDexScreenerTokensWithMetadata();
+            // Haal DexScreener data op (gebruik cache als beschikbaar)
+            let dexScreenerTokens = this.dexScreenerTokensCache;
+            const now = Date.now();
+            
+            if (now - this.lastDexScreenerUpdate >= this.DEXSCREENER_CACHE_DURATION) {
+                dexScreenerTokens = await this.dexScreenerService.getDexScreenerTokensWithMetadata();
+                this.dexScreenerTokensCache = dexScreenerTokens;
+                this.lastDexScreenerUpdate = now;
+            }
 
             // Haal Pump.fun tokens op
             const pumpFunTokens = this.pumpFunService.getTokensWithMetadata();
@@ -89,7 +147,7 @@ export class TokenService {
      * Haalt alleen DexScreener tokens op
      */
     async getDexScreenerTokens(): Promise<any[]> {
-        return await this.dexScreenerService.getLatestCoins();
+        return await this.dexScreenerService.getDexScreenerTokensWithMetadata();
     }
 
     /**
@@ -113,6 +171,8 @@ export class TokenService {
         return {
             pumpFunTokens: this.pumpFunService.getTokenCount(),
             pumpFunWebSocketStarted: true, // We weten dat deze gestart is
+            dexScreenerTokens: this.dexScreenerTokensCache.length,
+            lastDexScreenerUpdate: new Date(this.lastDexScreenerUpdate).toISOString(),
             timestamp: new Date().toISOString()
         };
     }

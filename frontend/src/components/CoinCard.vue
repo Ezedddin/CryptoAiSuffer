@@ -128,6 +128,17 @@ const getPriceChangeClass = (change: number): string => {
         >
           🚀 Pump.fun
         </a>
+        <!-- DexScreener button - alleen tonen als het een DexScreener token is -->
+        <a 
+          v-if="coin.source === 'dexscreener' && coin.url" 
+          :href="coin.url" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="dexscreener-button"
+          @click.stop
+        >
+          📊 DexScreener
+        </a>
       </div>
     </div>
   </div>
@@ -348,5 +359,26 @@ const getPriceChangeClass = (change: number): string => {
   background: linear-gradient(45deg, #a855f7, #dc1fff);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 31, 255, 0.3);
+}
+
+.dexscreener-button {
+  background: linear-gradient(45deg, #00d4ff, #0099cc);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dexscreener-button:hover {
+  background: linear-gradient(45deg, #0099cc, #00d4ff);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 </style>

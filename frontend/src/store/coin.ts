@@ -20,6 +20,8 @@ export interface Coin {
     holders: number
     isNewLaunch: boolean
     externalUrl?: string // Echte URL naar DexScreener of Pump.fun
+    source?: string // 'pump.fun' of 'dexscreener'
+    url?: string // Directe URL naar DexScreener
 }
 
 export interface WalletAnalysis {
@@ -163,6 +165,10 @@ export const useCoinStore = defineStore('coin', () => {
         } else if (token.source === 'dexscreener') {
             // Voor DexScreener tokens, gebruik de echte URL uit de API
             externalUrl = ('url' in token && token.url) ? token.url : ''
+            // Als geen URL beschikbaar is, genereer een DexScreener URL
+            if (!externalUrl && token.symbol) {
+                externalUrl = `https://dexscreener.com/search?q=${encodeURIComponent(token.symbol)}`
+            }
         }
 
         // Bepaal prijsverandering op basis van token type
@@ -194,8 +200,10 @@ export const useCoinStore = defineStore('coin', () => {
                 : (token.blockchain as 'BTC' | 'Solana' | 'Ethereum') || 'Solana',
             description: token.description || `New ${token.source === 'pump.fun' ? 'Pump.fun' : 'DexScreener'} token`,
             totalSupply: Math.floor(Math.random() * 1000000000),
-            marketCap: ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
-            volume24h: Math.floor(Math.random() * 1000000),
+            source: token.source,
+            url: ('url' in token ? token.url : '') || externalUrl,
+            marketCap: ('marketCap' in token ? token.marketCap : 0) || ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
+            volume24h: ('volume24h' in token ? token.volume24h : 0) || Math.floor(Math.random() * 1000000),
             holders: Math.floor(Math.random() * 10000),
             isNewLaunch: true,
             externalUrl: externalUrl
