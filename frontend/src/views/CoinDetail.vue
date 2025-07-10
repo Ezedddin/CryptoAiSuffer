@@ -15,6 +15,9 @@
             <span class="blockchain-badge-large" :class="`blockchain-${coin.blockchain.toLowerCase()}`">
               {{ coin.blockchain }}
             </span>
+            <!-- <h3 class="section-title">📖 Over {{ coin.name }}</h3> -->
+      <p class="description-text">{{ coin.description }}</p>
+
           </div>
         </div>
         
@@ -81,13 +84,70 @@
 
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="main-content-grid">
-      <!-- Price Chart -->
-      <div class="chart-section card">
-        <div class="chart-placeholder">
-          <h3>📈 Prijs Grafiek</h3>
-          <p>Grafiek wordt geladen...</p>
+    <!-- Analysis Grid -->
+    <div class="analysis-grid">
+      <!-- Wallet Analysis -->
+      <div class="wallet-analysis-section card">
+        <h3 class="section-title">👛 Wallet Analyse</h3>
+        <div class="wallet-analysis-header">
+          <div class="analysis-stats">
+            <div class="analysis-stat">
+              <span class="stat-number">{{ coin.walletAnalysis.length }}</span>
+              <span class="stat-text">Significante Kopers</span>
+            </div>
+            <div class="analysis-stat">
+              <span class="stat-number">{{ insiderCount }}</span>
+              <span class="stat-text">Insider Wallets</span>
+            </div>
+            <div class="analysis-stat">
+              <span class="stat-number">{{ averageAiScore }}</span>
+              <span class="stat-text">Gem. AI Score</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="wallet-table-container">
+          <table class="wallet-table">
+            <thead>
+              <tr>
+                <th>Wallet Address</th>
+                <th>AI Score</th>
+                <th>Gekocht</th>
+                <th>Winstgevende Coins</th>
+                <th>Totale Winst</th>
+                <th>Status</th>
+                <th>Acties</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="wallet in coin.walletAnalysis" :key="wallet.address" class="wallet-row">
+                <td class="wallet-address">
+                  <span class="address-short">{{ shortenAddress(wallet.address) }}</span>
+                </td>
+                <td>
+                  <span class="ai-score-badge" :class="getAiScoreClass(wallet.aiScore)">
+                    {{ wallet.aiScore }}
+                  </span>
+                </td>
+                <td class="purchase-amount">
+                  ${{ formatNumber(wallet.totalPurchase) }}
+                </td>
+                <td>{{ wallet.profitableCoins }}</td>
+                <td class="profit-amount text-success">
+                  ${{ formatNumber(wallet.totalProfit) }}
+                </td>
+                <td>
+                  <span v-if="wallet.isInsider" class="insider-badge">🔥 Insider</span>
+                  <span v-else class="regular-badge">📊 Regulier</span>
+                </td>
+                <td>
+                  <button @click="navigateToWallet(wallet.address)" class="view-wallet-btn">
+                    Bekijk Wallet
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -118,6 +178,7 @@
         </div>
       </div>
     </div>
+    
 
     <!-- Wallet Analysis -->
     <div class="wallet-analysis-section card">
@@ -184,11 +245,7 @@
       </div>
     </div>
 
-    <!-- Coin Description -->
-    <div class="coin-description card">
-      <h3 class="section-title">📖 Over {{ coin.name }}</h3>
-      <p class="description-text">{{ coin.description }}</p>
-    </div>
+
   </div>
 
   <!-- Loading/Error States -->
@@ -233,14 +290,18 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
+const getPriceChangeClass = (change: number): string => {
+  return change >= 0 ? 'text-success' : 'text-danger'
+}
+
 const getAiScoreClass = (score: number): string => {
   if (score >= 80) return 'score-high'
   if (score >= 60) return 'score-medium'
   return 'score-low'
 }
 
-const getPriceChangeClass = (change: number): string => {
-  return change >= 0 ? 'text-success' : 'text-danger'
+const navigateToWallet = (address: string) => {
+  router.push(`/wallet/${address}`)
 }
 
 const shortenAddress = (address: string): string => {
@@ -251,10 +312,6 @@ const shortenAddress = (address: string): string => {
 
 const goBack = () => {
   router.push('/')
-}
-
-const navigateToWallet = (address: string) => {
-  router.push(`/wallet/${address}`)
 }
 
 // External link functions
@@ -505,16 +562,154 @@ loadCoinData()
   color: #fff;
 }
 
-.main-content-grid {
+.analysis-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 30px;
   margin-bottom: 30px;
+  align-items: stretch;
 }
 
-.chart-section,
-.ai-analysis-section {
+.ai-analysis-section,
+.wallet-analysis-section {
   padding: 25px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wallet-analysis-header {
+  margin-bottom: 20px;
+}
+
+.analysis-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.analysis-stat {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #00ff88;
+  margin-bottom: 5px;
+}
+
+.stat-text {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.wallet-table-container {
+  overflow-x: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wallet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  flex: 1;
+}
+
+.wallet-table th,
+.wallet-table td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.wallet-table th {
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.wallet-table td {
+  color: #fff;
+}
+
+.wallet-address {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.address-short {
+  color: #00ff88;
+}
+
+.ai-score-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ai-score-badge.score-high {
+  background-color: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.ai-score-badge.score-medium {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.ai-score-badge.score-low {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+.purchase-amount,
+.profit-amount {
+  font-weight: 600;
+}
+
+.insider-badge {
+  background-color: rgba(255, 69, 0, 0.2);
+  color: #ff4500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.regular-badge {
+  background-color: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.view-wallet-btn {
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  color: #000;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-wallet-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
 }
 
 .section-title {
@@ -575,6 +770,7 @@ loadCoinData()
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex: 1;
 }
 
 .ai-prediction {

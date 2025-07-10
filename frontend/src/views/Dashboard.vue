@@ -16,10 +16,10 @@
         </div>
       </div>
       <div class="stat-card card">
-        <div class="stat-icon">🎯</div>
+        <div class="stat-icon">🚀</div>
         <div class="stat-content">
-          <h3 class="stat-value">{{ stats.highAiScoreCoins }}</h3>
-          <p class="stat-label">Hoge AI Score</p>
+          <h3 class="stat-value">{{ stats.pumpFunTokens }}</h3>
+          <p class="stat-label">Pump.fun Tokens</p>
         </div>
       </div>
       <div class="stat-card card">
@@ -64,6 +64,19 @@
             <option value="Ethereum">Ethereum</option>
             <option value="Solana">Solana</option>
             <option value="BTC">Bitcoin</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">Source</label>
+          <select 
+            v-model="selectedSource"
+            @change="updateSource"
+            class="filter-select"
+          >
+            <option value="all">Alle Sources</option>
+            <option value="pump.fun">🚀 Pump.fun</option>
+            <option value="dexscreener">📊 DexScreener</option>
           </select>
         </div>
         
@@ -188,6 +201,7 @@ const coinStore = useCoinStore()
 // Reactive data
 const searchQuery = ref('')
 const selectedBlockchain = ref('all')
+const selectedSource = ref('all')
 const minAiScore = ref(0)
 const sortBy = ref('aiScore')
 const viewMode = ref('grid')
@@ -220,7 +234,7 @@ const sortedCoins = computed(() => {
 
 const stats = computed(() => ({
   totalCoins: filteredCoins.value.length,
-  highAiScoreCoins: filteredCoins.value.filter((coin: any) => coin.aiScore >= 80).length,
+  pumpFunTokens: filteredCoins.value.filter((coin: any) => coin.source === 'pump.fun').length,
   totalMarketCap: filteredCoins.value.reduce((sum: number, coin: any) => sum + coin.marketCap, 0),
   trendingCoins: filteredCoins.value.filter((coin: any) => (coin.priceChangePerMinute || 0) > 5).length
 }))
@@ -236,6 +250,10 @@ const updateBlockchain = () => {
 
 const updateAiScore = () => {
   coinStore.updateAiScoreFilter(minAiScore.value)
+}
+
+const updateSource = () => {
+  coinStore.updateSourceFilter(selectedSource.value)
 }
 
 const updateSort = () => {

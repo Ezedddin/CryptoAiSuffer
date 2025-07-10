@@ -40,6 +40,19 @@ const tokenEmitter = new EventEmitter();
 const priceService = PriceService.getInstance();
 const priceHistoryService = PriceHistoryService.getInstance();
 
+// Helper functie om beschrijving te genereren voor Pump.fun tokens
+const generatePumpFunDescription = (token: PumpFunToken): string => {
+    if (token.name && token.symbol) {
+        return `${token.name} (${token.symbol}) - New Pump.fun token on Solana`;
+    } else if (token.name) {
+        return `${token.name} - New Pump.fun token on Solana`;
+    } else if (token.symbol) {
+        return `${token.symbol} - New Pump.fun token on Solana`;
+    } else {
+        return 'New Pump.fun token on Solana';
+    }
+};
+
 // Timer voor periodieke prijs updates
 let priceUpdateTimer: NodeJS.Timeout | null = null;
 
@@ -160,6 +173,9 @@ const connectPumpFunWebSocket = (): void => {
                 // Bereken market cap in USD
                 const marketCapUSD = token.marketCapSol && solPrice ? token.marketCapSol * solPrice : 0;
                 
+                // Genereer beschrijving voor Pump.fun tokens
+                const description = generatePumpFunDescription(token);
+
                 // Voeg timestamp toe en sla op
                 const enrichedToken: EnrichedPumpFunToken = {
                     ...token,
@@ -168,7 +184,8 @@ const connectPumpFunWebSocket = (): void => {
                     blockchain: 'Solana', // Pump.fun is Solana-based
                     price,
                     priceChangePerMinute,
-                    marketCap: marketCapUSD
+                    marketCap: marketCapUSD,
+                    description
                 };
 
                 // Voeg toe aan begin van array (nieuwste eerst)
@@ -258,6 +275,9 @@ const connectPumpFunWebSocket = (): void => {
                 // Bereken market cap in USD
                 const marketCapUSD = token.marketCapSol && solPrice ? token.marketCapSol * solPrice : 0;
 
+                // Genereer beschrijving voor Pump.fun tokens
+                const description = generatePumpFunDescription(token);
+
                 const enrichedToken: EnrichedPumpFunToken = {
                     ...token,
                     source: 'pump.fun',
@@ -265,7 +285,8 @@ const connectPumpFunWebSocket = (): void => {
                     blockchain: 'Solana',
                     price,
                     priceChangePerMinute,
-                    marketCap: marketCapUSD
+                    marketCap: marketCapUSD,
+                    description
                 };
 
                 pumpFunTokens.unshift(enrichedToken);

@@ -113,6 +113,7 @@ export const useCoinStore = defineStore('coin', () => {
     const selectedCoin = ref<CoinDetail | null>(null)
     const searchQuery = ref('')
     const selectedBlockchain = ref<string>('all')
+    const selectedSource = ref<string>('all')
     const minAiScore = ref(0)
 
     // Helper functions for data transformation
@@ -207,7 +208,10 @@ export const useCoinStore = defineStore('coin', () => {
             blockchain: token.blockchain === 'Multi'
                 ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')
                 : (token.blockchain as 'BTC' | 'Solana' | 'Ethereum') || 'Solana',
-            description: token.description || `New ${token.source === 'pump.fun' ? 'Pump.fun' : 'DexScreener'} token`,
+            description: token.description || (token.source === 'pump.fun' 
+                ? `New Pump.fun token ${token.symbol || 'on Solana'}`
+                : `DexScreener token ${token.symbol || 'with trading data'}`
+            ),
             source: token.source,
             url: ('url' in token ? token.url : '') || externalUrl,
             marketCap: ('marketCap' in token ? token.marketCap : 0) || ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
@@ -317,9 +321,11 @@ export const useCoinStore = defineStore('coin', () => {
                 coin.symbol.toLowerCase().includes(searchQuery.value.toLowerCase())
             const matchesBlockchain = selectedBlockchain.value === 'all' ||
                 coin.blockchain === selectedBlockchain.value
+            const matchesSource = selectedSource.value === 'all' ||
+                coin.source === selectedSource.value
             const matchesAiScore = coin.aiScore >= minAiScore.value
 
-            return matchesSearch && matchesBlockchain && matchesAiScore
+            return matchesSearch && matchesBlockchain && matchesSource && matchesAiScore
         })
     })
 
@@ -372,6 +378,10 @@ export const useCoinStore = defineStore('coin', () => {
         minAiScore.value = score
     }
 
+    function updateSourceFilter(source: string) {
+        selectedSource.value = source
+    }
+
     // Cleanup function
     const cleanup = () => {
         ApiService.disconnectRealTime()
@@ -383,6 +393,7 @@ export const useCoinStore = defineStore('coin', () => {
         selectedCoin,
         searchQuery,
         selectedBlockchain,
+        selectedSource,
         minAiScore,
         isLoading,
         error,
@@ -394,6 +405,7 @@ export const useCoinStore = defineStore('coin', () => {
         setSelectedCoin,
         updateSearchQuery,
         updateBlockchainFilter,
+        updateSourceFilter,
         updateAiScoreFilter,
         fetchLatestCoins,
         setupRealTime,
