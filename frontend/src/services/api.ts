@@ -34,6 +34,7 @@ interface PumpFunToken {
     receivedAt: string
     blockchain: string
     externalUrl?: string // URL naar Pump.fun coin pagina
+    priceChangePerMinute?: number // Prijsverandering per minuut
     [key: string]: any
 }
 

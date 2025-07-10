@@ -10,6 +10,7 @@ export interface Coin {
     launchDate: string
     currentPrice: number
     priceChange24h: number
+    priceChangePerMinute?: number // Voor Pump.fun tokens
     aiScore: number
     blockchain: 'BTC' | 'Solana' | 'Ethereum'
     description: string
@@ -75,6 +76,7 @@ export const useCoinStore = defineStore('coin', () => {
             launchDate: '2024-01-14',
             currentPrice: 0.0078,
             priceChange24h: 67.8,
+            priceChangePerMinute: 2.5,
             aiScore: 72,
             blockchain: 'Solana',
             description: 'Community-driven meme coin with utility features',
@@ -163,6 +165,18 @@ export const useCoinStore = defineStore('coin', () => {
             externalUrl = ('url' in token && token.url) ? token.url : ''
         }
 
+        // Bepaal prijsverandering op basis van token type
+        let priceChange = 0;
+        if (token.source === 'pump.fun') {
+            // Voor Pump.fun tokens, gebruik priceChangePerMinute
+            priceChange = ('priceChangePerMinute' in token && token.priceChangePerMinute !== undefined) 
+                ? token.priceChangePerMinute 
+                : 0;
+        } else {
+            // Voor DexScreener tokens, gebruik priceChange24h
+            priceChange = token.priceChange24h || (Math.random() - 0.5) * 200;
+        }
+
         return {
             id: ('id' in token ? token.id : '') || ('mint' in token ? token.mint : '') || index.toString(),
             name: getCleanCoinName(token, index),
@@ -172,7 +186,8 @@ export const useCoinStore = defineStore('coin', () => {
             currentPrice: token.price || (token.source === 'pump.fun' && 'usd_market_cap' in token && token.usd_market_cap
                 ? token.usd_market_cap / 1000000 // Rough price estimation
                 : Math.random() * 0.01),
-            priceChange24h: token.priceChange24h || (Math.random() - 0.5) * 200, // Echte prijs verandering of mock
+            priceChange24h: priceChange, // Gebruik de juiste prijsverandering
+            priceChangePerMinute: token.source === 'pump.fun' ? priceChange : undefined, // Voor Pump.fun tokens
             aiScore: Math.floor(Math.random() * 100), // Mock AI score
             blockchain: token.blockchain === 'Multi'
                 ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')

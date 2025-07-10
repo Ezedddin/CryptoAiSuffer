@@ -1,17 +1,20 @@
 import { DexScreenerService } from '../DexScreen/dexscreener.service.js';
 import { PumpFunService } from '../Pump.Fun/pump.fun.service.js';
 import { PriceService } from './price.service.js';
+import { PriceHistoryService } from './price-history.service.js';
 
 export class TokenService {
     private static instance: TokenService;
     private dexScreenerService: DexScreenerService;
     private pumpFunService: PumpFunService;
     private priceService: PriceService;
+    private priceHistoryService: PriceHistoryService;
 
     private constructor() {
         this.dexScreenerService = DexScreenerService.getInstance();
         this.pumpFunService = PumpFunService.getInstance();
         this.priceService = PriceService.getInstance();
+        this.priceHistoryService = PriceHistoryService.getInstance();
     }
 
     public static getInstance(): TokenService {
@@ -42,23 +45,28 @@ export class TokenService {
             // Haal SOL prijs één keer op voor alle tokens
             const solPrice = await this.priceService.getSolPrice();
             
-            // Voeg prijzen toe aan Pump.fun tokens
+            // Voeg prijzen toe aan Pump.fun tokens (gebruik WebSocket data als beschikbaar)
             const pumpFunTokensWithPrices = await Promise.all(
                 pumpFunTokens.map(async (token) => {
-                    let price = 0;
-                    let priceChange24h = 0;
+                    let price = token.price || 0;
+                    let priceChangePerMinute = token.priceChangePerMinute || 0;
 
-                    // Bereken accurate prijs uit market cap SOL (Pump.fun heeft geen publieke API)
-                    if (token.marketCapSol) {
+                    // Als WebSocket data geen prijs heeft, bereken dan opnieuw
+                    if (!price && token.marketCapSol && token.mint) {
                         const totalSupply = token.vTokensInBondingCurve || 1000000000;
                         price = this.priceService.calculatePriceFromMarketCapSolSync(token.marketCapSol, totalSupply, solPrice);
-                        priceChange24h = 0; // We hebben geen 24h data van Pump.fun
+                        
+                        // Voeg prijs toe aan geschiedenis
+                        this.priceHistoryService.addPricePoint(token.mint, price);
+                        
+                        // Bereken prijsverandering per minuut
+                        priceChangePerMinute = this.priceHistoryService.calculatePriceChangePerMinute(token.mint);
                     }
 
                     return {
                         ...token,
                         price,
-                        priceChange24h
+                        priceChangePerMinute
                     };
                 })
             );

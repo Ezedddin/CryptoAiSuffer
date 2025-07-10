@@ -23,12 +23,14 @@
             <span class="price-label">Huidige Prijs</span>
             <span class="price-value">${{ formatPrice(coin.currentPrice) }}</span>
             <span class="price-change" :class="getPriceChangeClass(coin.priceChange24h)">
-              <!-- Toon 24h change alleen voor DexScreener tokens (Pump.fun heeft geen 24h data) -->
+              <!-- Toon 24h change voor DexScreener tokens -->
               <span v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
-                {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}%
+                {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}% (24h)
               </span>
-              <!-- Voor Pump.fun tokens, toon N/A -->
-              <span v-else class="na-value">N/A</span>
+              <!-- Voor Pump.fun tokens, toon 1m change -->
+              <span v-else>
+                {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}% (1m)
+              </span>
             </span>
           </div>
           

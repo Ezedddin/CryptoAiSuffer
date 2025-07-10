@@ -71,17 +71,19 @@ const getPriceChangeClass = (change: number): string => {
         <span class="stat-label">Prijs</span>
         <span class="stat-value">${{ formatPrice(coin.currentPrice) }}</span>
       </div>
-      <!-- Toon 24h change alleen voor DexScreener tokens (Pump.fun heeft geen 24h data) -->
+      <!-- Toon 24h change voor DexScreener tokens -->
       <div class="stat" v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
         <span class="stat-label">24h</span>
         <span class="stat-value" :class="getPriceChangeClass(coin.priceChange24h)">
           {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}%
         </span>
       </div>
-      <!-- Voor Pump.fun tokens, toon total supply in plaats van 24h change -->
+      <!-- Voor Pump.fun tokens, toon 1m change -->
       <div class="stat" v-if="coin.externalUrl && coin.externalUrl.includes('pump.fun')">
-        <span class="stat-label">Supply</span>
-        <span class="stat-value">{{ formatNumber(coin.totalSupply || 0) }}</span>
+        <span class="stat-label">1m</span>
+        <span class="stat-value" :class="getPriceChangeClass(coin.priceChangePerMinute || 0)">
+          {{ (coin.priceChangePerMinute || 0) > 0 ? '+' : '' }}{{ (coin.priceChangePerMinute || 0).toFixed(1) }}%
+        </span>
       </div>
     </div>
 

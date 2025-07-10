@@ -76,6 +76,13 @@ export class SSEService {
     }
 
     /**
+     * Stuurt bijgewerkte tokens naar alle clients
+     */
+    broadcastTokensUpdated(tokens: any[]): void {
+        this.broadcastToAll({ type: 'tokensUpdated', tokens });
+    }
+
+    /**
      * Haalt het aantal verbonden clients op
      */
     getClientCount(): number {

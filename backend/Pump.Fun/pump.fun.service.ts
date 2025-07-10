@@ -56,13 +56,15 @@ export class PumpFunService {
     /**
      * Haalt Pump.fun tokens op met metadata en links
      */
-    getTokensWithMetadata(): Array<any & { source: string; blockchain: string; externalUrl: string | null }> {
+    getTokensWithMetadata(): Array<any & { source: string; blockchain: string; externalUrl: string | null; price?: number; priceChangePerMinute?: number }> {
         const tokens = getPumpFunTokens();
         return tokens.map(token => ({
             ...token,
             source: 'pump.fun',
             blockchain: 'Solana', // Pump.fun is Solana-gebaseerd
-            externalUrl: token.mint ? this.generateTokenLink(token.mint) : null
+            externalUrl: token.mint ? this.generateTokenLink(token.mint) : null,
+            price: token.price,
+            priceChangePerMinute: token.priceChangePerMinute
         }));
     }
 } 
