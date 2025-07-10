@@ -61,20 +61,24 @@ const updateExistingTokenPrices = async () => {
                 const totalSupply = token.vTokensInBondingCurve || 1000000000;
                 const newPrice = priceService.calculatePriceFromMarketCapSolSync(adjustedMarketCapSol, totalSupply, solPrice);
                 
+                // Bereken nieuwe market cap in USD
+                const newMarketCapUSD = adjustedMarketCapSol * solPrice;
+                
                 // Voeg nieuwe prijs toe aan geschiedenis
                 priceHistoryService.addPricePoint(token.mint, newPrice);
                 
                 // Bereken prijsverandering per minuut
                 const priceChangePerMinute = priceHistoryService.calculatePriceChangePerMinute(token.mint);
                 
-                // Update token met nieuwe prijs en prijsverandering
+                // Update token met nieuwe prijs, prijsverandering en market cap
                 pumpFunTokens[i] = {
                     ...token,
                     price: newPrice,
-                    priceChangePerMinute
+                    priceChangePerMinute,
+                    marketCap: newMarketCapUSD
                 };
                 
-                console.log(`🔄 Token ${token.name} prijs bijgewerkt: $${newPrice.toFixed(8)} (${priceChangePerMinute.toFixed(2)}%)`);
+                console.log(`🔄 Token ${token.name} prijs bijgewerkt: $${newPrice.toFixed(8)} (${priceChangePerMinute.toFixed(2)}%), MarketCap: $${newMarketCapUSD.toFixed(2)}`);
             }
         }
         
@@ -135,10 +139,11 @@ const connectPumpFunWebSocket = (): void => {
                 // Bereken prijs en prijsverandering
                 let price = 0;
                 let priceChangePerMinute = 0;
+                let solPrice = 0;
 
                 if (token.marketCapSol && token.mint) {
                     // Haal SOL prijs op
-                    const solPrice = await priceService.getSolPrice();
+                    solPrice = await priceService.getSolPrice();
                     
                     // Bereken token prijs
                     const totalSupply = token.vTokensInBondingCurve || 1000000000;
@@ -152,6 +157,9 @@ const connectPumpFunWebSocket = (): void => {
                     console.log(`📊 Prijsverandering per minuut voor ${token.mint}: ${priceChangePerMinute.toFixed(2)}%`);
                 }
 
+                // Bereken market cap in USD
+                const marketCapUSD = token.marketCapSol && solPrice ? token.marketCapSol * solPrice : 0;
+                
                 // Voeg timestamp toe en sla op
                 const enrichedToken: EnrichedPumpFunToken = {
                     ...token,
@@ -159,7 +167,8 @@ const connectPumpFunWebSocket = (): void => {
                     receivedAt: new Date().toISOString(),
                     blockchain: 'Solana', // Pump.fun is Solana-based
                     price,
-                    priceChangePerMinute
+                    priceChangePerMinute,
+                    marketCap: marketCapUSD
                 };
 
                 // Voeg toe aan begin van array (nieuwste eerst)
@@ -182,10 +191,11 @@ const connectPumpFunWebSocket = (): void => {
                 // Bereken prijs en prijsverandering
                 let price = 0;
                 let priceChangePerMinute = 0;
+                let solPrice = 0;
 
                 if (token.marketCapSol && token.mint) {
                     // Haal SOL prijs op
-                    const solPrice = await priceService.getSolPrice();
+                    solPrice = await priceService.getSolPrice();
                     
                     // Bereken token prijs
                     const totalSupply = token.vTokensInBondingCurve || 1000000000;
@@ -199,13 +209,17 @@ const connectPumpFunWebSocket = (): void => {
                     console.log(`📊 Prijsverandering per minuut voor ${token.mint}: ${priceChangePerMinute.toFixed(2)}%`);
                 }
 
+                // Bereken market cap in USD
+                const marketCapUSD = token.marketCapSol && solPrice ? token.marketCapSol * solPrice : 0;
+
                 const enrichedToken: EnrichedPumpFunToken = {
                     ...token,
                     source: 'pump.fun',
                     receivedAt: new Date().toISOString(),
                     blockchain: 'Solana',
                     price,
-                    priceChangePerMinute
+                    priceChangePerMinute,
+                    marketCap: marketCapUSD
                 };
 
                 pumpFunTokens.unshift(enrichedToken);
@@ -223,10 +237,11 @@ const connectPumpFunWebSocket = (): void => {
                 // Bereken prijs en prijsverandering
                 let price = 0;
                 let priceChangePerMinute = 0;
+                let solPrice = 0;
 
                 if (token.marketCapSol && token.mint) {
                     // Haal SOL prijs op
-                    const solPrice = await priceService.getSolPrice();
+                    solPrice = await priceService.getSolPrice();
                     
                     // Bereken token prijs
                     const totalSupply = token.vTokensInBondingCurve || 1000000000;
@@ -240,13 +255,17 @@ const connectPumpFunWebSocket = (): void => {
                     console.log(`📊 Prijsverandering per minuut voor ${token.mint}: ${priceChangePerMinute.toFixed(2)}%`);
                 }
 
+                // Bereken market cap in USD
+                const marketCapUSD = token.marketCapSol && solPrice ? token.marketCapSol * solPrice : 0;
+
                 const enrichedToken: EnrichedPumpFunToken = {
                     ...token,
                     source: 'pump.fun',
                     receivedAt: new Date().toISOString(),
                     blockchain: 'Solana',
                     price,
-                    priceChangePerMinute
+                    priceChangePerMinute,
+                    marketCap: marketCapUSD
                 };
 
                 pumpFunTokens.unshift(enrichedToken);

@@ -17,7 +17,6 @@ export interface Coin {
     totalSupply: number
     marketCap: number
     volume24h: number
-    holders: number
     isNewLaunch: boolean
     externalUrl?: string // Echte URL naar DexScreener of Pump.fun
     source?: string // 'pump.fun' of 'dexscreener'
@@ -66,7 +65,7 @@ export const useCoinStore = defineStore('coin', () => {
             totalSupply: 1000000000,
             marketCap: 450000,
             volume24h: 85000,
-            holders: 1250,
+
             isNewLaunch: true,
             externalUrl: 'https://dexscreener.com/ethereum/safemoonpro'
         },
@@ -85,7 +84,7 @@ export const useCoinStore = defineStore('coin', () => {
             totalSupply: 500000000,
             marketCap: 3900000,
             volume24h: 267000,
-            holders: 3450,
+
             isNewLaunch: true,
             externalUrl: 'https://pump.fun/coin/cgem'
         },
@@ -103,7 +102,7 @@ export const useCoinStore = defineStore('coin', () => {
             totalSupply: 21000000,
             marketCap: 49140,
             volume24h: 12000,
-            holders: 890,
+
             isNewLaunch: true,
             externalUrl: 'https://dexscreener.com/bitcoin/moonshot'
         }
@@ -123,6 +122,8 @@ export const useCoinStore = defineStore('coin', () => {
         if (address.length <= 10) return address
         return `${address.slice(0, 6)}...${address.slice(-4)}`
     }
+
+
 
     const getCleanCoinName = (token: CombinedToken | PumpFunToken, index: number): string => {
         // Voor Pump.fun tokens
@@ -173,13 +174,22 @@ export const useCoinStore = defineStore('coin', () => {
 
         // Bepaal prijsverandering op basis van token type
         let priceChange = 0;
+        let priceChangePerMinute = 0;
+        
         if (token.source === 'pump.fun') {
             // Voor Pump.fun tokens, gebruik priceChangePerMinute
-            priceChange = ('priceChangePerMinute' in token && token.priceChangePerMinute !== undefined) 
+            priceChangePerMinute = ('priceChangePerMinute' in token && token.priceChangePerMinute !== undefined) 
                 ? token.priceChangePerMinute 
                 : 0;
+            priceChange = priceChangePerMinute;
+        } else if (token.source === 'dexscreener') {
+            // Voor DexScreener tokens, gebruik alleen 1m verandering
+            priceChangePerMinute = ('priceChangePerMinute' in token && token.priceChangePerMinute !== undefined)
+                ? token.priceChangePerMinute
+                : 0;
+            priceChange = priceChangePerMinute; // Gebruik 1m voor beide velden
         } else {
-            // Voor DexScreener tokens, gebruik priceChange24h
+            // Fallback
             priceChange = token.priceChange24h || (Math.random() - 0.5) * 200;
         }
 
@@ -193,7 +203,7 @@ export const useCoinStore = defineStore('coin', () => {
                 ? token.usd_market_cap / 1000000 // Rough price estimation
                 : Math.random() * 0.01),
             priceChange24h: priceChange, // Gebruik de juiste prijsverandering
-            priceChangePerMinute: token.source === 'pump.fun' ? priceChange : undefined, // Voor Pump.fun tokens
+            priceChangePerMinute: priceChangePerMinute, // Voor beide Pump.fun en DexScreener tokens
             aiScore: Math.floor(Math.random() * 100), // Mock AI score
             blockchain: token.blockchain === 'Multi'
                 ? (['BTC', 'Solana', 'Ethereum'][Math.floor(Math.random() * 3)] as 'BTC' | 'Solana' | 'Ethereum')
@@ -204,7 +214,7 @@ export const useCoinStore = defineStore('coin', () => {
             url: ('url' in token ? token.url : '') || externalUrl,
             marketCap: ('marketCap' in token ? token.marketCap : 0) || ('market_cap' in token ? token.market_cap : 0) || ('usd_market_cap' in token ? token.usd_market_cap : 0) || Math.floor(Math.random() * 10000000),
             volume24h: ('volume24h' in token ? token.volume24h : 0) || Math.floor(Math.random() * 1000000),
-            holders: Math.floor(Math.random() * 10000),
+
             isNewLaunch: true,
             externalUrl: externalUrl
         }
@@ -228,6 +238,30 @@ export const useCoinStore = defineStore('coin', () => {
         console.log(`💎 Total coins in store: ${coins.value.length}`)
     }
 
+    // Real-time tokens updated handler
+    const handleTokensUpdated = (updatedTokens: CombinedToken[]) => {
+        console.log('🔄 Updating tokens in store:', updatedTokens.length, 'tokens')
+
+        // Update existing tokens with new data
+        updatedTokens.forEach(updatedToken => {
+            const existingIndex = coins.value.findIndex(coin => {
+                if (updatedToken.source === 'pump.fun' && 'mint' in updatedToken) {
+                    return coin.id === updatedToken.mint
+                } else if (updatedToken.source === 'dexscreener' && 'id' in updatedToken) {
+                    return coin.id === updatedToken.id
+                }
+                return false
+            })
+
+            if (existingIndex !== -1) {
+                // Update existing token
+                const updatedCoin = transformTokenToCoin(updatedToken, existingIndex)
+                coins.value[existingIndex] = updatedCoin
+                console.log(`🔄 Updated token: ${updatedCoin.name} (${updatedCoin.priceChangePerMinute?.toFixed(2)}%)`)
+            }
+        })
+    }
+
     // Setup real-time connection
     const setupRealTime = () => {
         console.log('🔗 Setting up real-time connection...')
@@ -236,13 +270,19 @@ export const useCoinStore = defineStore('coin', () => {
         ApiService.connectRealTime()
 
         // Listen for new tokens
-        const unsubscribe = ApiService.onNewToken(handleNewToken)
+        const unsubscribeNewToken = ApiService.onNewToken(handleNewToken)
+
+        // Listen for token updates
+        const unsubscribeTokensUpdated = ApiService.onTokensUpdated(handleTokensUpdated)
 
         // Update connection status
         isRealTimeConnected.value = ApiService.isRealTimeConnected()
 
         // Cleanup function
-        return unsubscribe
+        return () => {
+            unsubscribeNewToken()
+            unsubscribeTokensUpdated()
+        }
     }
 
     // API function to fetch latest coins

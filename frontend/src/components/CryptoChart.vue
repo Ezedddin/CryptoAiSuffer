@@ -7,7 +7,7 @@
         <div class="price-info">
           <span class="current-price">${{ formatPrice(coinData.currentPrice) }}</span>
           <span class="price-change" :class="getPriceChangeClass(coinData.priceChange24h)">
-            {{ coinData.priceChange24h > 0 ? '+' : '' }}{{ coinData.priceChange24h.toFixed(2) }}%
+            {{ coinData.priceChange24h > 0 ? '+' : '' }}{{ coinData.priceChange24h.toFixed(2) }}% (1m)
           </span>
         </div>
       </div>

@@ -22,14 +22,10 @@
           <div class="current-price">
             <span class="price-label">Huidige Prijs</span>
             <span class="price-value">${{ formatPrice(coin.currentPrice) }}</span>
-            <span class="price-change" :class="getPriceChangeClass(coin.priceChange24h)">
-              <!-- Toon 24h change voor DexScreener tokens -->
-              <span v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
-                {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}% (24h)
-              </span>
-              <!-- Voor Pump.fun tokens, toon 1m change -->
-              <span v-else>
-                {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}% (1m)
+            <span class="price-change" :class="getPriceChangeClass(coin.priceChangePerMinute || 0)">
+              <!-- Toon alleen 1m change voor alle tokens -->
+              <span>
+                {{ (coin.priceChangePerMinute || 0) > 0 ? '+' : '' }}{{ (coin.priceChangePerMinute || 0).toFixed(1) }}% (1m)
               </span>
             </span>
           </div>
@@ -81,20 +77,7 @@
           </span>
         </div>
       </div>
-      <div class="stat-item card">
-        <div class="stat-icon">👥</div>
-        <div class="stat-content">
-          <span class="stat-label">Holders</span>
-          <span class="stat-value">
-            <!-- Toon holders alleen voor DexScreener tokens (Pump.fun heeft geen holder data) -->
-            <span v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
-              {{ formatNumber(coin.holders) }}
-            </span>
-            <!-- Voor Pump.fun tokens, toon N/A -->
-            <span v-else class="na-value">N/A</span>
-          </span>
-        </div>
-      </div>
+
       <div class="stat-item card">
         <div class="stat-icon">🎯</div>
         <div class="stat-content">
@@ -108,22 +91,10 @@
     <div class="main-content-grid">
       <!-- Price Chart -->
       <div class="chart-section card">
-        <CryptoChart 
-          v-if="coin"
-          :coin-data="{
-            name: coin.name,
-            symbol: coin.symbol,
-            currentPrice: coin.currentPrice,
-            priceChange24h: coin.priceChange24h,
-            marketCap: coin.marketCap,
-            volume24h: coin.volume24h,
-            priceHistory: coin.priceHistory?.map(p => ({
-              timestamp: new Date(p.timestamp).getTime(),
-              price: p.price,
-              volume: Math.random() * (coin?.volume24h || 1000000)
-            }))
-          }"
-        />
+        <div class="chart-placeholder">
+          <h3>📈 Prijs Grafiek</h3>
+          <p>Grafiek wordt geladen...</p>
+        </div>
       </div>
 
       <!-- AI Analysis -->
@@ -234,11 +205,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCoinStore } from '../store/coin'
 import type { CoinDetail } from '../store/coin'
-import CryptoChart from '../components/CryptoChart.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -279,8 +249,6 @@ const getPriceChangeClass = (change: number): string => {
   return change >= 0 ? 'text-success' : 'text-danger'
 }
 
-
-
 const shortenAddress = (address: string): string => {
   if (!address) return ''
   if (address.length <= 10) return address
@@ -312,14 +280,33 @@ const getExternalPlatform = (coinData: CoinDetail): string => {
   return 'DexScreener'
 }
 
-onMounted(() => {
+// Load coin data when component is created
+const loadCoinData = async () => {
   const coinId = route.params.id as string
+  
+  // Probeer eerst de coin uit de store te halen
   coin.value = coinStore.getCoinById(coinId)
   
-  if (coin.value) {
-    coinStore.setSelectedCoin(coinId)
+  // Als de coin niet in de store staat, haal dan alle tokens opnieuw op
+  if (!coin.value) {
+    console.log('Coin niet gevonden in store, haal alle tokens opnieuw op...')
+    await coinStore.fetchLatestCoins()
+    coin.value = coinStore.getCoinById(coinId)
   }
-})
+  
+  // Als de coin nog steeds niet gevonden is, toon een foutmelding
+  if (!coin.value) {
+    console.error('Coin niet gevonden:', coinId)
+    // Redirect naar dashboard met foutmelding
+    router.push('/?error=coin-not-found')
+    return
+  }
+  
+  coinStore.setSelectedCoin(coinId)
+}
+
+// Start loading immediately
+loadCoinData()
 </script>
 
 <style scoped>
@@ -549,12 +536,25 @@ onMounted(() => {
 }
 
 .chart-placeholder {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 300px;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: #888;
+}
+
+.chart-placeholder h3 {
+  margin: 0 0 10px 0;
+  color: #00ff88;
+}
+
+.chart-placeholder p {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .chart-mock {

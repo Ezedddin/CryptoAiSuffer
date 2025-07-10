@@ -87,7 +87,7 @@
             class="filter-select"
           >
             <option value="aiScore">AI Score</option>
-            <option value="priceChange24h">24h Verandering</option>
+            <option value="priceChangePerMinute">1m Verandering</option>
             <option value="marketCap">Market Cap</option>
             <option value="launchDate">Launch Datum</option>
           </select>
@@ -155,7 +155,7 @@
 
     <!-- Top Performers Section -->
     <div class="top-performers-section">
-      <h2 class="section-title">🏆 Top Performers (24h)</h2>
+      <h2 class="section-title">🏆 Top Performers (1m)</h2>
       <div class="top-performers-grid">
         <div 
           v-for="coin in topPerformers" 
@@ -167,7 +167,7 @@
           <div class="performer-info">
             <span class="performer-name">{{ coin.name }}</span>
             <span class="performer-change text-success">
-              +{{ coin.priceChange24h.toFixed(1) }}%
+              +{{ (coin.priceChangePerMinute || 0).toFixed(1) }}%
             </span>
           </div>
         </div>
@@ -206,8 +206,8 @@ const sortedCoins = computed(() => {
     switch (sortBy.value) {
       case 'aiScore':
         return b.aiScore - a.aiScore
-      case 'priceChange24h':
-        return b.priceChange24h - a.priceChange24h
+      case 'priceChangePerMinute':
+        return (b.priceChangePerMinute || 0) - (a.priceChangePerMinute || 0)
       case 'marketCap':
         return b.marketCap - a.marketCap
       case 'launchDate':
@@ -222,7 +222,7 @@ const stats = computed(() => ({
   totalCoins: filteredCoins.value.length,
   highAiScoreCoins: filteredCoins.value.filter((coin: any) => coin.aiScore >= 80).length,
   totalMarketCap: filteredCoins.value.reduce((sum: number, coin: any) => sum + coin.marketCap, 0),
-  trendingCoins: filteredCoins.value.filter((coin: any) => coin.priceChange24h > 10).length
+  trendingCoins: filteredCoins.value.filter((coin: any) => (coin.priceChangePerMinute || 0) > 5).length
 }))
 
 // Event handlers

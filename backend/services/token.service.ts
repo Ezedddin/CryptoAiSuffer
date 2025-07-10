@@ -2,6 +2,7 @@ import { DexScreenerService } from '../DexScreen/dexscreener.service.js';
 import { PumpFunService } from '../Pump.Fun/pump.fun.service.js';
 import { PriceService } from './price.service.js';
 import { PriceHistoryService } from './price-history.service.js';
+import { SSEService } from './sse.service.js';
 
 export class TokenService {
     private static instance: TokenService;
@@ -11,13 +12,20 @@ export class TokenService {
     private priceHistoryService: PriceHistoryService;
     private dexScreenerTokensCache: any[] = [];
     private lastDexScreenerUpdate: number = 0;
-    private readonly DEXSCREENER_CACHE_DURATION = 5 * 60 * 1000; // 5 minuten
+    private readonly DEXSCREENER_CACHE_DURATION = 1 * 60 * 1000; // 5 minuten
 
     private constructor() {
         this.dexScreenerService = DexScreenerService.getInstance();
         this.pumpFunService = PumpFunService.getInstance();
         this.priceService = PriceService.getInstance();
         this.priceHistoryService = PriceHistoryService.getInstance();
+        
+        // Luister naar token updates en stuur naar SSE clients
+        const tokenEmitter = this.pumpFunService.getTokenEmitter();
+        tokenEmitter.on('tokensUpdated', (tokens) => {
+            const sseService = SSEService.getInstance();
+            sseService.broadcastTokensUpdated(tokens);
+        });
     }
 
     public static getInstance(): TokenService {
@@ -33,14 +41,14 @@ export class TokenService {
     startServices(): void {
         this.pumpFunService.startWebSocket();
         
-        // Start timer voor DexScreener prijs updates (elke 30 seconden)
+        // Start timer voor DexScreener prijs updates (elke 5 minuten)
         setInterval(() => {
             this.updateDexScreenerPrices();
-        }, 30 * 1000);
+        }, 5 * 60 * 1000);
     }
 
     /**
-     * Update DexScreener prijzen met kleine variaties voor realistische prijsveranderingen
+     * Update DexScreener prijzen elke minuut met echte API data
      */
     private async updateDexScreenerPrices(): Promise<void> {
         try {
@@ -51,29 +59,16 @@ export class TokenService {
                 return;
             }
 
-            // Haal nieuwe DexScreener data op
+            // Haal nieuwe DexScreener data op (dit zal automatisch nieuwe API calls maken)
             const newTokens = await this.dexScreenerService.getDexScreenerTokensWithMetadata();
             
-            // Update bestaande tokens met nieuwe prijzen
-            for (const newToken of newTokens) {
-                if (newToken.id && newToken.price) {
-                    // Voeg prijs toe aan geschiedenis
-                    this.priceHistoryService.addPricePoint(newToken.id, newToken.price);
-                    
-                    // Bereken prijsverandering per minuut
-                    const priceChangePerMinute = this.priceHistoryService.calculatePriceChangePerMinute(newToken.id);
-                    
-                    // Update token met nieuwe prijsverandering
-                    newToken.priceChangePerMinute = priceChangePerMinute;
-                    
-                    // Voeg kleine random variatie toe voor realistische updates
-                    const variation = (Math.random() - 0.5) * 0.02; // ±1% variatie
-                    newToken.price = newToken.price * (1 + variation);
-                }
-            }
-            
+            // Update cache
             this.dexScreenerTokensCache = newTokens;
             this.lastDexScreenerUpdate = now;
+            
+            // Stuur updates naar SSE clients
+            const sseService = SSEService.getInstance();
+            sseService.broadcastTokensUpdated(newTokens);
             
             console.log(`🔄 DexScreener prijzen bijgewerkt voor ${newTokens.length} tokens`);
             

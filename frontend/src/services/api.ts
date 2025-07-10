@@ -47,15 +47,17 @@ interface CombinedToken extends Partial<DexScreenerCoin>, Partial<PumpFunToken> 
 
 // Interface voor SSE berichten
 interface SSEMessage {
-    type: 'connected' | 'newToken'
+    type: 'connected' | 'newToken' | 'tokensUpdated'
     message?: string
     token?: PumpFunToken
+    tokens?: CombinedToken[]
 }
 
 // Real-time service voor Server-Sent Events
 class RealTimeService {
     private eventSource: EventSource | null = null
-    private listeners: Array<(token: PumpFunToken) => void> = []
+    private newTokenListeners: Array<(token: PumpFunToken) => void> = []
+    private tokensUpdatedListeners: Array<(tokens: CombinedToken[]) => void> = []
 
     connect() {
         if (this.eventSource) {
@@ -77,8 +79,12 @@ class RealTimeService {
                     console.log('🔗 SSE connection established:', data.message)
                 } else if (data.type === 'newToken' && data.token) {
                     console.log('🚀 New token received via SSE:', data.token.name || data.token.symbol)
-                    // Notify all listeners
-                    this.listeners.forEach(listener => listener(data.token!))
+                    // Notify all new token listeners
+                    this.newTokenListeners.forEach(listener => listener(data.token!))
+                } else if (data.type === 'tokensUpdated' && data.tokens) {
+                    console.log('🔄 Tokens updated via SSE:', data.tokens.length, 'tokens')
+                    // Notify all tokens updated listeners
+                    this.tokensUpdatedListeners.forEach(listener => listener(data.tokens!))
                 }
             } catch (error) {
                 console.error('Error parsing SSE message:', error)
@@ -105,13 +111,25 @@ class RealTimeService {
     }
 
     onNewToken(callback: (token: PumpFunToken) => void) {
-        this.listeners.push(callback)
+        this.newTokenListeners.push(callback)
 
         // Return unsubscribe function
         return () => {
-            const index = this.listeners.indexOf(callback)
+            const index = this.newTokenListeners.indexOf(callback)
             if (index > -1) {
-                this.listeners.splice(index, 1)
+                this.newTokenListeners.splice(index, 1)
+            }
+        }
+    }
+
+    onTokensUpdated(callback: (tokens: CombinedToken[]) => void) {
+        this.tokensUpdatedListeners.push(callback)
+
+        // Return unsubscribe function
+        return () => {
+            const index = this.tokensUpdatedListeners.indexOf(callback)
+            if (index > -1) {
+                this.tokensUpdatedListeners.splice(index, 1)
             }
         }
     }
@@ -193,6 +211,10 @@ export class ApiService {
 
     static onNewToken(callback: (token: PumpFunToken) => void) {
         return realTimeService.onNewToken(callback)
+    }
+
+    static onTokensUpdated(callback: (tokens: CombinedToken[]) => void) {
+        return realTimeService.onTokensUpdated(callback)
     }
 
     static isRealTimeConnected(): boolean {

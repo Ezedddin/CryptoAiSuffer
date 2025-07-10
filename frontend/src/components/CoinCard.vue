@@ -71,15 +71,8 @@ const getPriceChangeClass = (change: number): string => {
         <span class="stat-label">Prijs</span>
         <span class="stat-value">${{ formatPrice(coin.currentPrice) }}</span>
       </div>
-      <!-- Toon 24h change voor DexScreener tokens -->
-      <div class="stat" v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
-        <span class="stat-label">24h</span>
-        <span class="stat-value" :class="getPriceChangeClass(coin.priceChange24h)">
-          {{ coin.priceChange24h > 0 ? '+' : '' }}{{ coin.priceChange24h.toFixed(1) }}%
-        </span>
-      </div>
-      <!-- Voor Pump.fun tokens, toon 1m change -->
-      <div class="stat" v-if="coin.externalUrl && coin.externalUrl.includes('pump.fun')">
+      <!-- Voor alle tokens, toon alleen 1m change -->
+      <div class="stat">
         <span class="stat-label">1m</span>
         <span class="stat-value" :class="getPriceChangeClass(coin.priceChangePerMinute || 0)">
           {{ (coin.priceChangePerMinute || 0) > 0 ? '+' : '' }}{{ (coin.priceChangePerMinute || 0).toFixed(1) }}%
@@ -105,13 +98,9 @@ const getPriceChangeClass = (change: number): string => {
     </div>
 
     <div class="coin-footer">
-      <!-- Toon holders alleen voor DexScreener tokens (Pump.fun heeft geen holder data) -->
-      <div class="holders-count" v-if="!coin.externalUrl || !coin.externalUrl.includes('pump.fun')">
-        👥 {{ formatNumber(coin.holders) }} holders
-      </div>
-      <!-- Voor Pump.fun tokens, toon volume info (als beschikbaar) -->
-      <div class="volume-info" v-if="coin.externalUrl && coin.externalUrl.includes('pump.fun')">
-        <span class="volume-label">Volume: N/A</span>
+      <!-- Volume info voor alle tokens -->
+      <div class="volume-info">
+        <span class="volume-label">Volume: {{ coin.source === 'dexscreener' ? '$' + formatNumber(coin.volume24h) : 'N/A' }}</span>
       </div>
       <div class="footer-actions">
         <div class="new-launch-badge" v-if="coin.isNewLaunch">
@@ -119,7 +108,7 @@ const getPriceChangeClass = (change: number): string => {
         </div>
         <!-- Pump.fun button - alleen tonen als het een Pump.fun token is -->
         <a 
-          v-if="coin.externalUrl && coin.externalUrl.includes('pump.fun')" 
+          v-if="coin.source === 'pump.fun' && coin.externalUrl" 
           :href="coin.externalUrl" 
           target="_blank" 
           rel="noopener noreferrer"
@@ -309,10 +298,7 @@ const getPriceChangeClass = (change: number): string => {
   border-top: 1px solid #2a2a2a;
 }
 
-.holders-count {
-  font-size: 12px;
-  color: #666;
-}
+
 
 .volume-info {
   font-size: 12px;
